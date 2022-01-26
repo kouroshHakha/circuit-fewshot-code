@@ -1,0 +1,31 @@
+.DS_store
+.idea
+bsim4v5*
+__pycache__
+*.log
+runs*
+ckpts
+
+.ipynb_checkpoints
+
+out
+
+# Virtual Env
+venv
+
+# VS code
+.vscode
+.env
+
+# figures
+*.png
+
+# numpy arrays
+*h5
+
+.wandb
+
+fig_*
+
+# configs
+rdiv/*.pt
