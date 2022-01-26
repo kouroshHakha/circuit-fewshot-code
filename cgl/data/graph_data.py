@@ -151,6 +151,7 @@ class CircuitGraphDataset(Dataset):
         graph_ids = []
         graph_nodes = {}
         i = 0
+        print('Converting the train.json file to individual graph torch files for efficient loading ...')
         for graph_dict in tqdm(content):
             try:
                 node_map, data = self.graph_to_data(graph_dict)
@@ -174,8 +175,9 @@ class CircuitGraphDataset(Dataset):
 
         if graph_ids:
             torch.save(dict(graph_ids=graph_ids, graph_nodes=graph_nodes), Path(self.processed_dir) / 'graphs.pt')
-    
-    
+
+        print('Conversion finished.')
+
     def get_stats(self, content):
         print('Computing the Stats across all the graphs ...')
         print('This may take a while')
@@ -601,6 +603,7 @@ class CircuitInMemDataset(InMemoryDataset):
 
         if not (Path(self.processed_dir) / 'data.h5').exists() or not (Path(self.processed_dir) / 'slices.h5').exists():
             data_list = []
+            print('Creating in-memory dataset ...')
             for data in tqdm(gdataset):
                 data_list.append(data)
             data, slices = self.collate(data_list)
@@ -615,6 +618,7 @@ class CircuitInMemDataset(InMemoryDataset):
 
             write_hdf5(data_dict, Path(self.processed_dir) / 'data.h5')
             write_hdf5(slices_dict, Path(self.processed_dir) / 'slices.h5')
+            print('In-memory dataset creation done. You can now use the dataset for your experiments.')
 
 
 class CircuitInMemFCDataset(CircuitInMemDataset):

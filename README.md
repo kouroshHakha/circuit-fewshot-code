@@ -6,7 +6,9 @@ Clone the repo, install the requirements and the package using `pip`:
 cd acnet
 pip install -r requirements.txt
 ```
-
+If the installation fails during installing torch inherited packages, 
+try installing `pip install torch==1.9.0` first and then install the `requirement.txt` packages. 
+The installation of torch_geometric is a bit time consuming.
 ### Data Loaders
 
 We prepare Pytorch Geometric data loaders that can be used right out of the box.
@@ -25,9 +27,12 @@ sample_data = train_dset[0]
 train_dloader = DataLoader(train_dset, batch_size=16)
 ```
 
-**OpAmp pretraining**. The file size is ~2.37GB. It will get automatically downloaded if it doesn't exist.
+**OpAmp pretraining**. The file size is ~2.37GB. 
+It will get automatically downloaded if it doesn't exist.
+The first time call takes about ~ 2hrs.
 ```python
-from acnet.data.graph_data import CircuitInMemDataset
+from cgl.data.graph_data import CircuitInMemDataset
+from torch_geometric.data import DataLoader
 
 
 dset = CircuitInMemDataset(root='/tmp/dataset/opamp_pt', mode='train')
@@ -41,12 +46,16 @@ test_dset = dset[splits['test']]
 train_dloader = DataLoader(train_dset, batch_size=16)
 ```
 
-**OpAmp biased pmos**. The file size is ~217MB. It will get automatically downloaded if it doesn't exist.
+**OpAmp biased pmos**. The file size is ~217MB. 
+It will get automatically downloaded if it doesn't exist.
+The first call to the dataset will process and prepare the raw files which will take <15 minutes.
+
 ```python
-from acnet.data.graph_data import CircuitInMemDataset
+from cgl.data.graph_data import CircuitInMemDataset
+from torch_geometric.data import DataLoader
 
 
-dset = CircuitInMemDataset(root='/tmp/dataset/opamp_biased_pmos', mode='train')
+dset = CircuitInMemDataset(root='./datasets/opamp_biased_pmos', mode='train', circuit_type='opamp_biased_pmos')
 
 sample_data = dset[0]
 splits = dset.splits
@@ -59,6 +68,11 @@ train_dloader = DataLoader(train_dset, batch_size=16)
 
 # Running the experiments
 All of our experiments with different GNN architectures can be reproduced by running the `pretrain.py` script. This script works with `wandb` for logging. So you have to define env variable [`WANDB_API_KEY`](https://docs.wandb.ai/guides/track/advanced/environment-variables) for the code to recognize your wandb workspace. 
+
+```bash
+echo "export WANDB_API_KEY=<api_key>" > .wandb
+source .bashrc
+```
 
 You can now launch pre-training the GNNs by running:
 ```bash
