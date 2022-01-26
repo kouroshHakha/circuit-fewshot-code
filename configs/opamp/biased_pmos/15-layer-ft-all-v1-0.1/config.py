@@ -11,7 +11,7 @@ from cgl.models.gnn import DeepGENNet
 s = time.time()
 print('Loading the dataset ...')
 root = '/store/nosnap/results/ngspice_biased_pmos_gain/two_stage_biased_pmos'
-cir_dset = CircuitGraphDataset(root=root, mode='train')
+cir_dset = CircuitGraphDataset(root=root, mode='train', circuit_type='opamp_biased_pmos')
 node_output_idx = next(iter(cir_dset.graph_nodes.values()))['V_net6']
 vout_idx = torch.where((torch.where(cir_dset[0].output_node_mask)[0] == node_output_idx))[0].item()
 

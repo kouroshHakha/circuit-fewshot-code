@@ -25,12 +25,16 @@ import time
 
 class CircuitGraphDataset(Dataset):
 
-    FILE_ID = {'opamp': '1ZNUI3TnM2t0Pzxb1bgMT3lumngf9Ljyh'}
-    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None, mode='train'):
+    FILE_ID = {
+        'opamp_pt': '1Qv4XQVh8Bp_MwYPpuOG5vBEJ0EAHOjlF',
+        'opamp_biased_pmos': '102h9nueJt9zBMkwWw_WcJmkQRw9rz7Xa',
+    }
+    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None, mode='train', circuit_type='opamp_pt'):
 
         # self.feat_dim = len(self.node_values) + len(self.node_types)
         self.mode = mode
         self._stats = None
+        self.circuit_type = circuit_type
 
         # This Trie is used for node_type encoding that will be done later
         # The node type key words are hierarchically added to a tree strcuture 
@@ -97,7 +101,7 @@ class CircuitGraphDataset(Dataset):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tar_file = str(Path(tmp_dir) / 'raw.tar.gz')
             print('Downloading the dataset ...')
-            download_file_from_google_drive(self.FILE_ID['opamp'],  tar_file)
+            download_file_from_google_drive(self.FILE_ID[self.circuit_type],  tar_file)
             print(f'Unzipping {tar_file} to {self.raw_dir} ...')
             decompress(tar_file, str(Path(self.raw_dir).parent))
         print('Download and Extraction complete.')
@@ -261,8 +265,9 @@ class CircuitGraphDataset(Dataset):
         vac_mag = np.abs(vac)
         # HACK: for downstream data we don't need to normalize since it's just the voltage gain from input to output anyways
         # we normalized specifically because of the current source in the pretraining data
-        # vac_mag_factor = vac_mag[:, 7].max(-1)[:, None, None] * np.ones_like(vac_mag)
-        # vac_mag = vac_mag / vac_mag_factor
+        if self.circuit_type == 'opamp_pt':
+            vac_mag_factor = vac_mag[:, 7].max(-1)[:, None, None] * np.ones_like(vac_mag)
+            vac_mag = vac_mag / vac_mag_factor
         # stat will be the statistics of those nodes that have a non-zero magnitude
         vac_mag_cond = vac_mag > 0
         vac_mag_db = 20 * np.log(vac_mag[vac_mag_cond])
@@ -311,8 +316,12 @@ class CircuitGraphDataset(Dataset):
 
         vac_arr = vac_r_arr + 1j * vac_i_arr
         vac_mag = np.abs(vac_arr)
-        # vac_mag_factor = vac_mag[7].max(-1)[None, None] * np.ones_like(vac_mag)
-        vac_mag_norm = vac_mag # / vac_mag_factor
+        if self.circuit_type == 'opamp_pt':
+            vac_mag_factor = vac_mag[7].max(-1)[None, None] * np.ones_like(vac_mag)
+            vac_mag_norm = vac_mag / vac_mag_factor
+        else:
+            vac_mag_norm = vac_mag
+
         vac_mag = 20 * np.ma.log(np.abs(vac_mag_norm)).filled(np.nan)
         vac_ph = np.angle(vac_arr)
         vac_ph[np.isnan(vac_mag)] = np.nan
@@ -528,8 +537,9 @@ def modify_content(content):
 
 
 class CircuitInMemDataset(InMemoryDataset):
-    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None, mode='train'):
+    def __init__(self, root, transform=None, pre_transform=None, pre_filter=None, mode='train', circuit_type='opamp_pt'):
         self.mode = mode
+        self.circuit_type = circuit_type
         super().__init__(root, transform, pre_transform, pre_filter)
         # self.data, self.slices = torch.load(self.processed_paths[0])
         data = read_hdf5(Path(self.processed_dir) / 'data.h5')
@@ -587,7 +597,7 @@ class CircuitInMemDataset(InMemoryDataset):
         return ['data.h5', 'slices.h5']
 
     def process(self):
-        gdataset = CircuitGraphDataset(self.root, mode=self.mode)
+        gdataset = CircuitGraphDataset(self.root, mode=self.mode, circuit_type=self.circuit_type)
 
         if not (Path(self.processed_dir) / 'data.h5').exists() or not (Path(self.processed_dir) / 'slices.h5').exists():
             data_list = []

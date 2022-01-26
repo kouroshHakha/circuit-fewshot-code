@@ -11,7 +11,7 @@ pip install -r requirements.txt
 
 We prepare Pytorch Geometric data loaders that can be used right out of the box.
 
-**Rladder**. You can download the files and put them in `rdiv` folder (size ~).
+**Rladder**. You can download the tarball [here](anonymized_link) and extract them in `rdiv` folder (size ~300MB).
 
 ```python
 from rdiv.data import RLadderDataset
@@ -25,12 +25,12 @@ sample_data = train_dset[0]
 train_dloader = DataLoader(train_dset, batch_size=16)
 ```
 
-**OpAmp pretraining**. The file size is ~2.37GB.
+**OpAmp pretraining**. The file size is ~2.37GB. It will get automatically downloaded if it doesn't exist.
 ```python
 from acnet.data.graph_data import CircuitInMemDataset
 
 
-dset = CircuitInMemDataset(root='/tmp/dataset/opamp', mode='train')
+dset = CircuitInMemDataset(root='/tmp/dataset/opamp_pt', mode='train')
 
 sample_data = dset[0]
 splits = dset.splits
@@ -41,12 +41,12 @@ test_dset = dset[splits['test']]
 train_dloader = DataLoader(train_dset, batch_size=16)
 ```
 
-**OpAmp biased pmos**. The file size is ~2.GB
+**OpAmp biased pmos**. The file size is ~217MB. It will get automatically downloaded if it doesn't exist.
 ```python
 from acnet.data.graph_data import CircuitInMemDataset
 
 
-dset = CircuitInMemDataset(root='/tmp/dataset/opamp', mode='train')
+dset = CircuitInMemDataset(root='/tmp/dataset/opamp_biased_pmos', mode='train')
 
 sample_data = dset[0]
 splits = dset.splits
