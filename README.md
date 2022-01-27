@@ -3,7 +3,7 @@
 Clone the repo, install the requirements and the package using `pip`:
 
 ```bash
-cd acnet
+cd circuit-fewshot-code
 pip install -r requirements.txt
 ```
 If the installation fails during installing torch inherited packages, 

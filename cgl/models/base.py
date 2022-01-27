@@ -1,9 +1,6 @@
 from collections import defaultdict
-from pprint import pprint
-from cgl.data.circuits_data import Node
 import torch
 import torch.nn as nn
-from torch.nn import parameter
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import pytorch_lightning as pl
