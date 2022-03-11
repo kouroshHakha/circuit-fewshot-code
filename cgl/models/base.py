@@ -117,14 +117,16 @@ class BaseNodeEmbeddingModule(pl.LightningModule):
         #     param_name = 'proj.nets.8.weight'
         #     noise = 0.01 * torch.rand_like(params[param_name])
         #     params[param_name].data = noise
-        output = dict(loss=res.loss.total, summary=res)
+        summary = {k: v for k, v in res.items() if k not in ('input', 'output')}
+        output = dict(loss=res.loss.total, summary=summary)
         return output
 
     def validation_step(self, batch, batch_idx):
         res = self._compute_ff(batch)
         # self._log_dict_with_prefix(res.loss, 'valid_loss', on_epoch=True)
         # self._log_dict_with_prefix(res.eval, 'valid')
-        output = dict(loss=res.loss.total, summary=res)
+        summary = {k: v for k, v in res.items() if k not in ('input', 'output')}
+        output = dict(loss=res.loss.total, summary=summary)
         return output
 
     def validation_epoch_end(self, outputs) -> None:
