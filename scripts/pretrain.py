@@ -93,16 +93,15 @@ class Trainer:
             callbacks=callbacks,
             resume_from_checkpoint=ckpt_path if not pargs.finetune else None,
             profiler='simple' if pargs.profile else None,
-            terminate_on_nan=True,
+            detect_anomaly=True,
             log_every_n_steps=pargs.log_freq,
             num_sanity_val_steps=-1,
             # check_val_every_n_epoch=max(int(conf.train_dloader.batch_size * pargs.val_intervel_steps / len(conf.train_dloader.dataset)), 1),
-            deterministic=True,
         )
 
         if pargs.train:
             pl.seed_everything(pargs.seed)
-            trainer.fit(model, train_dataloader=conf.train_dloader, val_dataloaders=conf.valid_dloader)
+            trainer.fit(model, train_dataloaders=conf.train_dloader, val_dataloaders=conf.valid_dloader)
             if ckpt_callback:
                 ckpt_path = ckpt_callback.best_model_path
                 # print(f'Best model is stored in {ckpt_path}.')
@@ -126,7 +125,7 @@ class Trainer:
             #     param.requires_grad = False
             model.config = conf.mdl_conf
             print('GCN backbone pre-loaded.')
-            trainer.fit(model, train_dataloader=conf.train_dloader, val_dataloaders=conf.valid_dloader)
+            trainer.fit(model, train_dataloaders=conf.train_dloader, val_dataloaders=conf.valid_dloader)
             if ckpt_callback:
                 ckpt_path = ckpt_callback.last_model_path
                 print(f'Last model is stored in {ckpt_path}.')
@@ -244,11 +243,11 @@ def parse_args():
     parser.add_argument('--train', type=int, default=1, help='set to zero to skip training')
     parser.add_argument('--finetune', type=int, default=0, help='set to zero to finetune')
     parser.add_argument('--gpus', type=int, default=0, help='set the training on gpu')
-    parser.add_argument('--output', type=str, default='/store/nosnap/results/cgl', 
+    parser.add_argument('--output', type=str, default=os.environ.get('OUTPUT_PATH', '.') + '/results/cgl', 
                         help='The output directory')
     parser.add_argument('--max_epochs', type=int, default=None, 
                         help='The maximum number of training epochs (if earlier than max_steps)')
-    parser.add_argument('--max_steps', type=int, default=None, 
+    parser.add_argument('--max_steps', type=int, default=-1, 
                         help='The maximum number of training steps (if earlier than max_epochs)')
     parser.add_argument('--ckpt', type=str, help='Resume from this checkpoint if valid.')
     parser.add_argument('--seed', type=int, default=0, help='Random seed')

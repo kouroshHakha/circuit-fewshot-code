@@ -2,3 +2,5 @@
 source .pypath
 
 source .wandb
+
+export DATASETS='./datasets'

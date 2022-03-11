@@ -1,5 +1,6 @@
 import time
 
+import os
 from torch_geometric.data import DataLoader
 
 from cgl.utils.params import ParamDict
@@ -9,7 +10,7 @@ from cgl.models.gnn import DeepGENNet
 
 s = time.time()
 print('Loading the dataset ...')
-dset = CircuitInMemDataset(root='/store/nosnap/datasets/two_stage_graph', mode='train')
+dset = CircuitInMemDataset(root=os.environ['DATASETS'] + '/' + 'opamp_pt', mode='train')
 print(f'Dataset was loaded in {time.time() - s:.6f} seconds.')
 
 sample_data = dset[0]
@@ -38,7 +39,8 @@ mdl_config = ParamDict(
     lr=lr,
     activation=activation,
     bins=200,
-    lr_warmup={'warmup': 0, 'max_iters': 100},
+    lr_warmup={'peak_lr': lr, 'weight_decay': 0, 
+               'warmup_updates': 50, 'tot_updates': 40000, 'end_lr': 5e-5},
     output_labels={'vdc': 1},
     proj_n_layers=3,
 )
