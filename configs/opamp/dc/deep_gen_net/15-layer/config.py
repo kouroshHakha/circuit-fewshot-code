@@ -41,6 +41,7 @@ mdl_config = ParamDict(
     bins=200,
     lr_warmup={'peak_lr': lr, 'weight_decay': 0, 
                'warmup_updates': 50, 'tot_updates': 40000, 'end_lr': 5e-5},
+    # lr_warmup={'warmup': 0, 'max_iters': 1000},
     output_labels={'vdc': 1},
     proj_n_layers=3,
 )

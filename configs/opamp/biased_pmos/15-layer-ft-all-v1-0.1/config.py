@@ -1,5 +1,6 @@
 import time
 
+import os
 import torch
 from torch_geometric.data import DataLoader
 
@@ -10,7 +11,7 @@ from cgl.models.gnn import DeepGENNet
 
 s = time.time()
 print('Loading the dataset ...')
-root = '/store/nosnap/results/ngspice_biased_pmos_gain/two_stage_biased_pmos'
+root = os.environ['DATASETS'] + '/' + 'opamp_biased_pmos'
 cir_dset = CircuitGraphDataset(root=root, mode='train', circuit_type='opamp_biased_pmos')
 node_output_idx = next(iter(cir_dset.graph_nodes.values()))['V_net6']
 vout_idx = torch.where((torch.where(cir_dset[0].output_node_mask)[0] == node_output_idx))[0].item()
@@ -58,7 +59,7 @@ mdl_config = ParamDict(
     freeze_backbone=False,
     # lr_warmup={'peak_lr': lr, 'weight_decay': 0, 
     #            'warmup_updates': 100, 'tot_updates': 600, 'end_lr': 1e-4},
-    lr_warmup={'warmup': 0, 'max_iters': 1000},
+    # lr_warmup={'warmup': 0, 'max_iters': 1000},
     output_labels={'vdc': 1},
     proj_n_layers=3,
 )
