@@ -78,7 +78,7 @@ You can now launch pre-training the GNNs by running:
 ```bash
 python scripts/pretrain.py --path <path_to_config> --gpus 1
 ```
-All the config files are provided in the `configs` folder for reproducibility. 
+All the config files are provided in the `configs` folder for reproducibility. They may need small modifications, but you can take a look at an example set of commands that were tested post release in `run_pretrain_exps.sh`.
 
 For more information on the options see `python scripts/pretrain.py -h`.
 
