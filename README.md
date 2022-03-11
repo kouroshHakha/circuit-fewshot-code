@@ -92,6 +92,14 @@ For fine-tuning on a graph property prediction run:
 python scripts/train_graph_prediction.py --project=<wandb_project_name> --gpus=1 --max_steps=5000 --gnn_ckpt=<gnn_backbone_ckpt> --path=<config_path>
 ```
 
+We have already uploaded a few pre-trained checkpoints to google drive [here](https://drive.google.com/drive/folders/1c0cskzFIPpS5qNcb9gfd5eUSfEk7f8fn?usp=sharing):
+| Checkpoint Path | Config file | Description |
+| --- | ----------- | ----------- |
+| 33c8jvqf/checkpoints/last.ckpt | configs/opamp/dc/deep_gen_net/15-layer/config.py | DeepGEN-15 + 95% accurate on pretraining task|
+
+
+
+
 ### Evaluator
 The evaluator used in this work is implemented in as `NodeEvaluator` class in `acnet/eval/evaluator.py`. For example usage see `acnet/models/base.py`.
 
