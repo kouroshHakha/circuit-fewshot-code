@@ -29,3 +29,5 @@ fig_*
 
 # configs
 rdiv/*.pt
+datasets
+results
