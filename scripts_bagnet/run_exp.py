@@ -18,6 +18,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelSummary
 
+# HACK: it's stupid to include the checkpointer used during pre-training
+from scripts.pretrain import ModelCheckpointNoOverride
 
 def _parse_args():
     parser = argparse.ArgumentParser()
@@ -32,10 +34,8 @@ def _parse_args():
     parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--device', default='cuda', type=str)
 
-    parser.add_argument('--use_gnn_backbone', action='store_true')
-
     # checkpoint resuming and testing
-    parser.add_argument('--gnn_ckpt', type=str)
+    parser.add_argument('--gnn_ckpt', type=str) # if you just want gnn backbone from scratch pass a dummy value
     parser.add_argument('--ckpt', type=str)
     parser.add_argument('--resume', action='store_true')
 
@@ -48,7 +48,7 @@ def _parse_args():
 def main(pargs):
     pl.seed_everything(pargs.seed)
 
-    dataset = BagNetDatasetTrain('datasets/bagnet_gnn', is_graph=pargs.use_gnn_backbone)
+    dataset = BagNetDatasetTrain('datasets/bagnet_gnn', is_graph=bool(pargs.gnn_ckpt))
     
 
     # test_loader = DataLoader(test_dataset, shuffle=False, batch_size=pargs.batch_size)
@@ -57,6 +57,7 @@ def main(pargs):
     conf = dict(
         lr=pargs.lr,
         test_every_n_epoch=50,
+        gnn_ckpt=pargs.gnn_ckpt,
     )
     pl_model = BagNetLightning(conf) 
 
@@ -86,7 +87,7 @@ def main(pargs):
         callbacks=[ModelSummary(max_depth=-1)],
         reload_dataloaders_every_n_epochs=50,
     )
-    datamodule = BagNetDataModule(batch_size=pargs.batch_size, use_gnn_backbone=pargs.use_gnn_backbone)
+    datamodule = BagNetDataModule(batch_size=pargs.batch_size, is_graph=bool(pargs.gnn_ckpt))
 
     trainer.fit(pl_model, datamodule=datamodule)
     trainer.test(pl_model, datamodule=datamodule)

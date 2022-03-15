@@ -10,6 +10,8 @@ from torch.utils.data import Dataset, DataLoader
 
 from cgl.utils.file import read_pickle
 from cgl.utils.pdb import register_pdb_hook
+from cgl.bagnet_gnn.dict2graph import Dict2Graph
+
 register_pdb_hook()
 
 MAX_SPECS = ('gain', 'ugbw', 'pm', 'psrr', 'cmrr')
@@ -20,15 +22,30 @@ TORCH_MEAN = torch.tensor([6.0134e-12, 5.3201e+01, 4.9209e+01, 3.8199e+01, 6.244
 TORCH_STD = torch.tensor([2.1734e-12, 2.3379e+01, 2.3961e+01, 2.5193e+01, 2.5965e+01, 2.3892e+01,
                           2.4936e+01, 2.6647e+02])
 
+
+
 class BagNetDataset(Dataset):
 
+
+    def __init__(self, datapath, is_graph=False) -> None:
+        super().__init__()
+        self.is_graph = is_graph
+
+        self.dict2graph = None
+        if is_graph:
+            self.dict2graph = Dict2Graph(meta_data_path=datapath)
 
     def _get_torch_repr(self, data_dict):
         params = data_dict['params']
         vec = torch.tensor([params[key] for key in sorted(params.keys())], dtype=torch.float)
         norm_vec = (vec - TORCH_MEAN) / TORCH_STD
         return norm_vec
-        
+
+    def _get_graph_repr(self, data_dict):
+        params = data_dict['params']
+        graph = self.dict2graph.param_to_graph(params)
+        return graph
+
     def _get_labels(self, input_a_dict, input_b_dict):
         
         spec_a = input_a_dict['specs']
@@ -60,9 +77,8 @@ class BagNetDataset(Dataset):
 class BagNetDatasetTrain(BagNetDataset):
 
     def __init__(self, datapath, optim_round=0, is_graph=False) -> None:
-        super().__init__()
+        super().__init__(datapath, is_graph=is_graph)
 
-        self.is_graph = is_graph
         self.datafile = Path(datapath) / 'train.pkl'
         self.data_all = read_pickle(self.datafile)
         self.round_max = len(self.data_all) - 1
@@ -106,7 +122,7 @@ class BagNetDatasetTrain(BagNetDataset):
 class BagNetDatasetTest(BagNetDataset):
 
     def __init__(self, datapath, is_graph=False) -> None:
-        self.is_graph = is_graph
+        super().__init__(datapath, is_graph=is_graph)
         self.datafile = Path(datapath) / 'test.pkl'
         self.data_all = read_pickle(self.datafile)
 
@@ -132,16 +148,21 @@ if __name__ == '__main__':
     # from torch.utils.data import DataLoader
 
     # dset_0 = DatasetTrain('datasets/bagnet_gnn', optim_round=0)
-    dset_15 = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=15)
+    # dset_15 = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=15)
 
-    dloader = DataLoader(dset_15, batch_size=len(dset_15))
-    batch = next(iter(dloader))
+    # dloader = DataLoader(dset_15, batch_size=len(dset_15))
+    # batch = next(iter(dloader))
 
-    print('mean')
-    print(batch['input_a'].mean(0))
-    print('std')
-    print(batch['input_a'].std(0))
+    # print('mean')
+    # print(batch['input_a'].mean(0))
+    # print('std')
+    # print(batch['input_a'].std(0))
 
     # tset = BagNetDatasetTest('datasets/bagnet_gnn')
     # tset[0]
     # breakpoint()
+
+    # dset_15 = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=15, is_graph=True)
+    tset = BagNetDatasetTest('datasets/bagnet_gnn', is_graph=True)
+
+    breakpoint()

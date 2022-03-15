@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+from cgl.models.gnn import DeepGENNet, Node2GraphEmb
+
 # TODO: test
 class SymLinear(nn.Module):
 
@@ -101,14 +103,39 @@ class FeatureExtractorLinear(nn.Module):
 
 class FeatureExtractorGNN(nn.Module):
 
-    # TODO
-    def __init__(self, gnn_backbone):
+    def __init__(self, gnn_ckpt_path, output_features, hidden_dim, freeze=False, use_pooling=False):
         super().__init__()
+        self.gnn = DeepGENNet.load_from_checkpoint(gnn_ckpt_path)
+        self.freeze = freeze
+        self.use_pooling = use_pooling
+        self.out_features = output_features
+
+        if self.freeze:
+            print('Backbone is frozen.')
+            self.gnn.freeze()
+
+        if self.use_pooling:
+            self.node2graph = None
+        else:
+            # n_embs = 8, n_layers=3
+            self.node2graph = Node2GraphEmb(output_features // 8, 3, output_features, self.gnn.config.hidden_channels)
 
 
-    def freeze(self):
-        pass
+    def forward(self, batch):
+        
+        input_struct = self.gnn.get_input_struct(batch)
+        node_embs = self.gnn.get_node_features(input_struct, return_masked=False)
 
+        n_nodes = len(batch.x) // batch.num_graphs
+        node_embs = torch.stack([node_embs[i::n_nodes] for i in range(n_nodes)], 1)
+        # node_embs = torch.stack(torch.split(node_embs, batch.num_graphs, 0), dim=1)
+        if self.use_pooling:
+            graph_embs = node_embs.mean(1)
+        else:
+            graph_embs = self.node2graph(node_embs)
+
+        output = {'feature': graph_embs}
+        return output
 
 
 class BagNetComparisonModel(nn.Module):

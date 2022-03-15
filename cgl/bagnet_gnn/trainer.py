@@ -4,13 +4,14 @@ from collections import defaultdict
 import torch
 from torch.optim import AdamW
 from torch.utils.data import random_split
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader as VecLoader
+
+from torch_geometric.loader import DataLoader as GNNLoader
 
 import pytorch_lightning as pl
 
 from cgl.bagnet_gnn.model import BagNetComparisonModel
 from cgl.bagnet_gnn.data import MAX_SPECS, MIN_SPECS, BagNetDatasetTrain, BagNetDatasetTest
-
 
 COMPARISON_KWRDS = MAX_SPECS + MIN_SPECS
 
@@ -42,13 +43,22 @@ class BagNetLightning(LightningBase):
 
         self.optim_round = 0
 
-        feature_ext_config = dict(
-            input_features=8,
-            output_features=20,
-            hidden_dim=20,
-            n_layers=2,
-            drop_out=0.2,
-        )
+        gnn_ckpt = self.conf['gnn_ckpt']
+
+        if gnn_ckpt:
+            feature_ext_config = dict(
+                gnn_ckpt_path=gnn_ckpt,
+                output_features=256,
+                hidden_dim=16,
+            )
+        else:
+            feature_ext_config = dict(
+                input_features=8,
+                output_features=20,
+                hidden_dim=20,
+                n_layers=2,
+                drop_out=0.2,
+            )
 
         comparison_config = dict(
             hidden_dim=20,
@@ -60,7 +70,7 @@ class BagNetLightning(LightningBase):
             comparison_kwrds=COMPARISON_KWRDS,
             feature_exractor_config=feature_ext_config,
             comparison_model_config=comparison_config, 
-            is_gnn=False
+            is_gnn=bool(gnn_ckpt),
         )
 
 
@@ -125,23 +135,23 @@ class BagNetLightning(LightningBase):
 
 class BagNetDataModule(pl.LightningDataModule):
 
-    def __init__(self, train_transforms=None, val_transforms=None, test_transforms=None, dims=None, batch_size=1, use_gnn_backbone=False):
+    def __init__(self, train_transforms=None, val_transforms=None, test_transforms=None, dims=None, batch_size=1, is_graph=False):
         super().__init__(train_transforms, val_transforms, test_transforms, dims)
 
-        self.save_hyperparameters('batch_size', 'use_gnn_backbone')
+        self.save_hyperparameters('batch_size', 'is_graph')
         self.batch_size = batch_size
-        self.use_gnn_backbone = use_gnn_backbone
+        self.is_graph = is_graph
 
         self.optim_round = 0
 
     def setup(self, stage) -> None:
-        self.test_dataset = BagNetDatasetTest('datasets/bagnet_gnn')
+        self.test_dataset = BagNetDatasetTest('datasets/bagnet_gnn', is_graph=self.is_graph)
 
         if stage in ('fit', 'validate'):
             self.train_dataset, self.valid_dataset = self._get_cur_train_valid_dataset()
 
     def _get_cur_train_valid_dataset(self):
-        dataset = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=self.optim_round, is_graph=self.use_gnn_backbone)
+        dataset = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=self.optim_round, is_graph=self.is_graph)
         
         split_lens = [int(0.8 * len(dataset))]
         split_lens.append(len(dataset) - split_lens[-1])
@@ -154,18 +164,26 @@ class BagNetDataModule(pl.LightningDataModule):
         self.optim_round += 1
         print('updated, next_optim_round: ',  self.optim_round)
 
+
+    def _get_loader(self, dataset, batch_size, shuffle=False):
+        if self.is_graph:
+            loader = GNNLoader(dataset, batch_size, shuffle=shuffle)
+        else:
+            loader = VecLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+        return loader
+
     def train_dataloader(self):
         self._update_datasets()
 
-        train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size)
+        train_loader = self._get_loader(self.train_dataset, batch_size=self.batch_size)
         return [train_loader]
 
     def val_dataloader(self):
-        valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size)
-        test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size)
+        valid_loader = self._get_loader(self.valid_dataset, batch_size=self.batch_size)
+        test_loader = self._get_loader(self.test_dataset, batch_size=self.batch_size)
         return [valid_loader, test_loader]
 
     def test_dataloader(self):
-        test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size)
+        test_loader = self._get_loader(self.test_dataset, batch_size=self.batch_size)
         return test_loader
         
