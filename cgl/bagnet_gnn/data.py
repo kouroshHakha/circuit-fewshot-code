@@ -1,0 +1,147 @@
+"""
+The train and test datasets should be handled separately because of their different pkl structure
+"""
+
+import numpy as np
+from pathlib import Path
+
+import torch
+from torch.utils.data import Dataset, DataLoader
+
+from cgl.utils.file import read_pickle
+from cgl.utils.pdb import register_pdb_hook
+register_pdb_hook()
+
+MAX_SPECS = ('gain', 'ugbw', 'pm', 'psrr', 'cmrr')
+MIN_SPECS = ('tset', 'offset_sys', 'ibias')
+
+TORCH_MEAN = torch.tensor([6.0134e-12, 5.3201e+01, 4.9209e+01, 3.8199e+01, 6.2449e+01, 3.7848e+01,
+                           6.8371e+01, 5.9423e+02])
+TORCH_STD = torch.tensor([2.1734e-12, 2.3379e+01, 2.3961e+01, 2.5193e+01, 2.5965e+01, 2.3892e+01,
+                          2.4936e+01, 2.6647e+02])
+
+class BagNetDataset(Dataset):
+
+
+    def _get_torch_repr(self, data_dict):
+        params = data_dict['params']
+        vec = torch.tensor([params[key] for key in sorted(params.keys())], dtype=torch.float)
+        norm_vec = (vec - TORCH_MEAN) / TORCH_STD
+        return norm_vec
+        
+    def _get_labels(self, input_a_dict, input_b_dict):
+        
+        spec_a = input_a_dict['specs']
+        spec_b = input_b_dict['specs']
+
+        labels = {}
+        for key in MAX_SPECS:
+            labels[key] = torch.tensor(spec_a[key] > spec_b[key], dtype=torch.long)
+        for key in MIN_SPECS:
+            labels[key] = torch.tensor(spec_a[key] < spec_b[key], dtype=torch.long)
+
+        return labels
+
+
+    def _get_comparison_data(self, sample_a, sample_b):
+
+        if self.is_graph:
+            input_a = self._get_graph_repr(sample_a)
+            input_b = self._get_graph_repr(sample_b)
+        else:
+            input_a = self._get_torch_repr(sample_a)
+            input_b = self._get_torch_repr(sample_b)
+
+        labels = self._get_labels(sample_a, sample_b)
+
+        return dict(input_a=input_a, input_b=input_b, **labels)
+
+
+class BagNetDatasetTrain(BagNetDataset):
+
+    def __init__(self, datapath, optim_round=0, is_graph=False) -> None:
+        super().__init__()
+
+        self.is_graph = is_graph
+        self.datafile = Path(datapath) / 'train.pkl'
+        self.data_all = read_pickle(self.datafile)
+        self.round_max = len(self.data_all) - 1
+
+        self.optim_round = optim_round
+        assert 0 <= optim_round <= self.round_max
+
+        self.data_cur_round = []
+        for round_idx in range(self.optim_round + 1):
+            self.data_cur_round += self.data_all[round_idx]
+    
+    
+    def __len__(self):
+        n = len(self.data_cur_round)
+        return n * (n-1) // 2 # all pair combinations of the dataset
+
+    def _get_paired_idx(self):
+        # imagine an upper triangular matric of pairs
+        # select row r = rand(0, n-2), excluding r_{n-1}
+        # then select the col = rand(r+1, n)
+        n = len(self.data_cur_round)
+        idx_a = np.random.randint(n - 1)
+        idx_b = np.random.randint(idx_a + 1, n)
+
+        if np.random.rand() < 0.5:
+            idx_a, idx_b = idx_b, idx_a
+
+        return idx_a, idx_b
+
+    def __getitem__(self, idx):
+
+        idx_a, idx_b = self._get_paired_idx()
+
+        sample_a = self.data_cur_round[idx_a]
+        sample_b = self.data_cur_round[idx_b]
+
+        output = self._get_comparison_data(sample_a, sample_b)
+        return output
+
+
+class BagNetDatasetTest(BagNetDataset):
+
+    def __init__(self, datapath, is_graph=False) -> None:
+        self.is_graph = is_graph
+        self.datafile = Path(datapath) / 'test.pkl'
+        self.data_all = read_pickle(self.datafile)
+
+        self.data_merged = []
+        for round_idx in self.data_all.keys():
+            self.data_merged += self.data_all[round_idx]
+
+    def __len__(self):
+        return len(self.data_merged)
+
+    def __getitem__(self, idx):
+        input_dict = self.data_merged[idx]
+
+        sample_a = input_dict['input1']
+        sample_b = input_dict['input2']
+
+        output = self._get_comparison_data(sample_a, sample_b)
+        return output
+
+
+if __name__ == '__main__': 
+
+    # from torch.utils.data import DataLoader
+
+    # dset_0 = DatasetTrain('datasets/bagnet_gnn', optim_round=0)
+    dset_15 = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=15)
+
+    dloader = DataLoader(dset_15, batch_size=len(dset_15))
+    batch = next(iter(dloader))
+
+    print('mean')
+    print(batch['input_a'].mean(0))
+    print('std')
+    print(batch['input_a'].std(0))
+
+    # tset = BagNetDatasetTest('datasets/bagnet_gnn')
+    # tset[0]
+    # breakpoint()
