@@ -48,22 +48,23 @@ class BagNetLightning(LightningBase):
         if gnn_ckpt:
             feature_ext_config = dict(
                 gnn_ckpt_path=gnn_ckpt,
-                output_features=256,
-                hidden_dim=16,
+                output_features=self.conf['feature_ext_out_dim'],
+                rand_init=self.conf['rand_init'],
+                freeze=self.conf['freeze'],
             )
         else:
             feature_ext_config = dict(
                 input_features=8,
-                output_features=20,
-                hidden_dim=20,
-                n_layers=2,
-                drop_out=0.2,
+                output_features=self.conf['feature_ext_out_dim'],
+                hidden_dim=self.conf['feature_ext_h_dim'],
+                n_layers=self.conf['feature_ext_n_layers'],
+                drop_out=self.conf['drop_out'],
             )
 
         comparison_config = dict(
-            hidden_dim=20,
-            n_layers=1,
-            drop_out=0.2,
+            hidden_dim=self.conf['comp_model_h_dim'],
+            n_layers=self.conf['comp_model_n_layers'],
+            drop_out=self.conf['drop_out'],
         )
 
         self.model = BagNetComparisonModel(

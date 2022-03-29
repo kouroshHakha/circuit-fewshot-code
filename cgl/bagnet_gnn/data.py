@@ -162,7 +162,35 @@ if __name__ == '__main__':
     # tset[0]
     # breakpoint()
 
-    # dset_15 = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=15, is_graph=True)
-    tset = BagNetDatasetTest('datasets/bagnet_gnn', is_graph=True)
+    train_set = BagNetDatasetTrain('datasets/bagnet_gnn', optim_round=15)
+    test_set = BagNetDatasetTest('datasets/bagnet_gnn')
 
+
+    train_x = []
+    for idx in range(len(train_set)):
+        data = train_set[idx]
+        train_x.append(torch.cat([data['input_a'], data['input_b']], -1))
+    train_x = torch.stack(train_x, 0).detach().cpu().numpy()
+
+    test_x = []
+    for idx in range(len(test_set)):
+        data = test_set[idx]
+        test_x.append(torch.cat([data['input_a'], data['input_b']], -1))
+    test_x = torch.stack(test_x, 0).detach().cpu().numpy()
+
+    from sklearn.manifold import TSNE
+    import matplotlib.pyplot as plt
+
+    print('Running TSNE for train ...')
+    train_2d = TSNE(n_components=2, verbose=True).fit_transform(train_x)
+    print('Running TSNE for test ...')
+    test_2d = TSNE(n_components=2, verbose=True).fit_transform(test_x)
+
+    plt.scatter(train_2d[:, 0], train_2d[:, 1], color='red', s=5)
+    plt.scatter(test_2d[:, 0], test_2d[:, 1], color='blue', s=5)
+    plt.savefig('tsne_test_train.png')
+
+    print(train_set[0])
+    print('-'*30)
+    print(test_set[0])
     breakpoint()

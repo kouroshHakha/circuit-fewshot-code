@@ -103,9 +103,13 @@ class FeatureExtractorLinear(nn.Module):
 
 class FeatureExtractorGNN(nn.Module):
 
-    def __init__(self, gnn_ckpt_path, output_features, hidden_dim, freeze=False, use_pooling=False):
+    def __init__(self, gnn_ckpt_path, output_features, freeze=False, use_pooling=False, rand_init=False):
         super().__init__()
         self.gnn = DeepGENNet.load_from_checkpoint(gnn_ckpt_path)
+
+        if rand_init:
+            self.gnn.reset_parameters()
+
         self.freeze = freeze
         self.use_pooling = use_pooling
         self.out_features = output_features

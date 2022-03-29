@@ -26,16 +26,27 @@ def _parse_args():
 
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--weight_decay', '-wc', default=1e-4, type=float)
-    parser.add_argument('--lr', '-lr', default=3e-4, type=float)
     parser.add_argument('--max_steps', default=1000, type=int) # max_steps per round
+    parser.add_argument('--lr', '-lr', default=3e-4, type=float)
+
+    # architecture
+    parser.add_argument('--feature_ext_out_dim', default=256, type=int)
+    parser.add_argument('--feature_ext_h_dim', default=256, type=int) 
+    parser.add_argument('--feature_ext_n_layers', default=2, type=int)
+
+    parser.add_argument('--comp_model_h_dim', default=20, type=int) 
+    parser.add_argument('--comp_model_n_layers', default=1, type=int)
     
+    parser.add_argument('--drop_out', default=0.1, type=float)
     # dataloader
     parser.add_argument('--batch_size', '-bs', default=128, type=int)
     parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--device', default='cuda', type=str)
 
     # checkpoint resuming and testing
-    parser.add_argument('--gnn_ckpt', type=str) # if you just want gnn backbone from scratch pass a dummy value
+    parser.add_argument('--gnn_ckpt', type=str) 
+    parser.add_argument('--rand_init', action='store_true')
+    parser.add_argument('--freeze', action='store_true') # if you want to freeze the encoder
     parser.add_argument('--ckpt', type=str)
     parser.add_argument('--resume', action='store_true')
 
@@ -58,6 +69,14 @@ def main(pargs):
         lr=pargs.lr,
         test_every_n_epoch=50,
         gnn_ckpt=pargs.gnn_ckpt,
+        rand_init=pargs.rand_init,
+        freeze=pargs.freeze,
+        feature_ext_out_dim=pargs.feature_ext_out_dim,
+        feature_ext_h_dim=pargs.feature_ext_h_dim,
+        feature_ext_n_layers=pargs.feature_ext_n_layers,
+        comp_model_h_dim=pargs.comp_model_h_dim,
+        comp_model_n_layers=pargs.comp_model_n_layers,
+        drop_out=pargs.drop_out,
     )
     pl_model = BagNetLightning(conf) 
 
