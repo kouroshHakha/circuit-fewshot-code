@@ -28,7 +28,7 @@ train_dloader = DataLoader(train_dset, batch_size=16)
 ```
 
 **OpAmp pretraining**. The file size is ~2.37GB. 
-It will get automatically downloaded if it doesn't exist.
+It will get automatically downloaded if it doesn't exist. Alternatively you can download it from [here](https://drive.google.com/file/d/1Qv4XQVh8Bp_MwYPpuOG5vBEJ0EAHOjlF/view?usp=share_link)
 The first time call takes about ~ 2hrs.
 ```python
 from cgl.data.graph_data import CircuitInMemDataset
@@ -47,7 +47,7 @@ train_dloader = DataLoader(train_dset, batch_size=16)
 ```
 
 **OpAmp biased pmos**. The file size is ~217MB. 
-It will get automatically downloaded if it doesn't exist.
+It will get automatically downloaded if it doesn't exist. Alternatively you can download it from [here](https://drive.google.com/file/d/102h9nueJt9zBMkwWw_WcJmkQRw9rz7Xa/view?usp=share_link)
 The first call to the dataset will process and prepare the raw files which will take <15 minutes.
 
 ```python
