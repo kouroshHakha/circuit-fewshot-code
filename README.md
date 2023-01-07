@@ -13,7 +13,7 @@ The installation of torch_geometric is a bit time consuming.
 
 We prepare Pytorch Geometric data loaders that can be used right out of the box.
 
-**Rladder**. You can download the tarball [here](anonymized_link) and extract them in `rdiv` folder (size ~300MB).
+**Rladder**. You can download the tarball [here](https://drive.google.com/file/d/1GPjALXIM4odrXdT9z5dOXq5Q1GamQhA9/view?usp=share_link) and extract them in `rdiv` folder (size ~300MB).
 
 ```python
 from rdiv.data import RLadderDataset
